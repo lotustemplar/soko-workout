@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Dr. Soko Workout</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  :root {
+    --bg: #0d0d0d;
+    --surface: #1a1a1a;
+    --surface2: #252525;
+    --surface3: #2e2e2e;
+    --accent: #e63946;
+    --accent2: #ff6b35;
+    --green: #2dc653;
+    --blue: #4ea8de;
+    --gold: #ffd60a;
+    --text: #f0f0f0;
+    --text2: #aaa;
+    --border: #333;
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system, 'Segoe UI', sans-serif; min-height: 100vh; overflow-x: hidden; }
+
+  /* NAV */
+  .nav { background: var(--surface); border-bottom: 1px solid var(--border); padding: 12px 16px; display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 100; }
+  .nav-back { background: none; border: none; color: var(--accent); font-size: 20px; cursor: pointer; padding: 4px 8px; }
+  .nav-title { font-size: 17px; font-weight: 700; flex: 1; }
+  .nav-badge { background: var(--accent); color: white; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 20px; }
+
+  /* PHASE TOGGLE */
+  .phase-bar { display: flex; padding: 12px 16px; gap: 8px; }
+  .phase-btn { flex: 1; padding: 10px; border-radius: var(--radius-sm); border: 2px solid var(--border); background: var(--surface2); color: var(--text2); font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+  .phase-btn.active { border-color: var(--accent); background: rgba(230,57,70,0.15); color: var(--accent); }
+
+  /* SCREENS */
+  .screen { display: none; padding: 0 0 80px 0; }
+  .screen.active { display: block; }
+
+  /* DAY LIST */
+  .section-header { padding: 16px 16px 8px; font-size: 11px; font-weight: 700; color: var(--text2); text-transform: uppercase; letter-spacing: 1px; }
+  .day-card { background: var(--surface); margin: 4px 16px; border-radius: var(--radius); padding: 14px 16px; cursor: pointer; border: 1px solid var(--border); display: flex; align-items: center; gap: 12px; transition: background 0.15s; }
+  .day-card:active { background: var(--surface2); }
+  .day-card.rest { opacity: 0.5; cursor: default; }
+  .day-num { width: 36px; height: 36px; border-radius: 50%; background: var(--accent); color: white; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; flex-shrink: 0; }
+  .day-num.rest-num { background: var(--surface3); color: var(--text2); }
+  .day-info { flex: 1; }
+  .day-name { font-size: 15px; font-weight: 600; margin-bottom: 2px; }
+  .day-muscles { font-size: 12px; color: var(--text2); }
+  .day-arrow { color: var(--text2); font-size: 18px; }
+  .day-complete-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); }
+
+  /* WORKOUT SCREEN */
+  .workout-header { padding: 16px; background: var(--surface); border-bottom: 1px solid var(--border); }
+  .workout-title { font-size: 20px; font-weight: 800; margin-bottom: 4px; }
+  .workout-meta { font-size: 13px; color: var(--text2); display: flex; gap: 12px; }
+  .meta-chip { display: flex; align-items: center; gap: 4px; }
+
+  /* EXERCISE CARD */
+  .exercise-card { background: var(--surface); margin: 8px 16px; border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; }
+  .exercise-header { padding: 14px 16px; display: flex; align-items: center; gap: 10px; cursor: pointer; }
+  .exercise-header:active { background: var(--surface2); }
+  .ex-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+  .ex-icon.myo { background: rgba(255,107,53,0.2); }
+  .ex-icon.drop { background: rgba(78,168,222,0.2); }
+  .ex-icon.normal { background: rgba(45,198,83,0.2); }
+  .ex-name { font-size: 14px; font-weight: 600; flex: 1; line-height: 1.3; }
+  .ex-badges { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 3px; }
+  .badge { font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; }
+  .badge-myo { background: rgba(255,107,53,0.25); color: var(--accent2); }
+  .badge-drop { background: rgba(78,168,222,0.25); color: var(--blue); }
+  .badge-done { background: rgba(45,198,83,0.25); color: var(--green); }
+  .ex-chevron { color: var(--text2); font-size: 14px; transition: transform 0.2s; }
+  .ex-chevron.open { transform: rotate(180deg); }
+
+  .exercise-body { display: none; padding: 0 16px 14px; }
+  .exercise-body.open { display: block; }
+
+  .notes-box { background: var(--surface3); border-radius: var(--radius-sm); padding: 10px 12px; font-size: 12px; color: var(--text2); margin-bottom: 12px; line-height: 1.5; }
+
+  /* SET ROW */
+  .set-label { font-size: 11px; font-weight: 700; color: var(--text2); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+  .set-row { background: var(--surface3); border-radius: var(--radius-sm); padding: 10px 12px; margin-bottom: 8px; }
+  .set-row-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .set-info { display: flex; gap: 16px; }
+  .set-stat { text-align: center; }
+  .set-stat-label { font-size: 10px; color: var(--text2); font-weight: 600; text-transform: uppercase; }
+  .set-stat-value { font-size: 15px; font-weight: 700; color: var(--text); }
+  .rest-chip { background: var(--surface); border-radius: 6px; padding: 4px 10px; font-size: 12px; color: var(--text2); font-weight: 600; }
+  .dropset-note { font-size: 11px; color: var(--blue); margin-bottom: 8px; font-weight: 600; }
+
+  /* WEIGHT INPUT */
+  .weight-row { display: flex; gap: 8px; align-items: center; }
+  .input-group { flex: 1; }
+  .input-label { font-size: 10px; color: var(--text2); font-weight: 600; text-transform: uppercase; margin-bottom: 4px; }
+  .input-field { width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; color: var(--text); font-size: 14px; font-weight: 600; outline: none; }
+  .input-field:focus { border-color: var(--accent); }
+  .input-field::placeholder { color: var(--border); }
+
+  /* REST TIMER BTN */
+  .rest-btn { background: var(--accent); color: white; border: none; border-radius: 8px; padding: 8px 14px; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
+  .rest-btn:active { opacity: 0.8; }
+  .rest-btn.running { background: var(--surface3); color: var(--accent); border: 2px solid var(--accent); }
+
+  /* PROGRESSION BANNER */
+  .progression-banner { border-radius: var(--radius-sm); padding: 8px 12px; font-size: 13px; font-weight: 700; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; letter-spacing: 0.3px; }
+  .progression-banner.increase { background: rgba(45,198,83,0.15); border: 1px solid rgba(45,198,83,0.4); color: var(--green); }
+  .progression-banner.decrease { background: rgba(230,57,70,0.15); border: 1px solid rgba(230,57,70,0.4); color: var(--accent); }
+  .progression-banner strong { font-size: 15px; }
+
+  /* HISTORY BTN */
+  .history-btn { width: 100%; background: none; border: 1px dashed var(--border); border-radius: 8px; padding: 8px; color: var(--text2); font-size: 12px; cursor: pointer; margin-top: 8px; display: flex; align-items: center; justify-content: center; gap: 6px; }
+  .history-btn:active { background: var(--surface2); }
+
+  /* TIMER BAR - sticky bottom, non-blocking */
+  .timer-bar { display: none; position: fixed; bottom: 0; left: 0; right: 0; z-index: 200; background: #111; border-top: 2px solid var(--accent); padding: 10px 16px 14px; flex-direction: column; gap: 8px; }
+  .timer-bar.active { display: flex; }
+  .timer-bar-top { display: flex; align-items: center; justify-content: space-between; }
+  .timer-bar-label { font-size: 12px; color: var(--text2); font-weight: 600; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-right: 10px; }
+  .timer-bar-secs { font-size: 28px; font-weight: 800; color: var(--accent); min-width: 64px; text-align: center; }
+  .timer-bar-secs.done { color: var(--green); }
+  .timer-bar-actions { display: flex; gap: 8px; }
+  .timer-skip { background: var(--surface2); color: var(--text2); border: 1px solid var(--border); border-radius: 8px; padding: 6px 14px; font-size: 13px; font-weight: 700; cursor: pointer; }
+  .timer-done-btn { background: var(--green); color: white; border: none; border-radius: 8px; padding: 6px 14px; font-size: 13px; font-weight: 700; cursor: pointer; }
+  .timer-progress-track { height: 4px; background: var(--surface3); border-radius: 2px; width: 100%; }
+  .timer-progress-fill { height: 4px; background: var(--accent); border-radius: 2px; width: 100%; transition: width 1s linear; }
+  .timer-progress-fill.done { background: var(--green); }
+
+  /* HISTORY MODAL */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 300; align-items: flex-end; justify-content: center; }
+  .modal-overlay.active { display: flex; }
+  .modal { background: var(--surface); width: 100%; max-width: 600px; max-height: 75vh; border-radius: 20px 20px 0 0; overflow: hidden; display: flex; flex-direction: column; }
+  .modal-header { padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); }
+  .modal-title { font-size: 16px; font-weight: 700; }
+  .modal-close { background: var(--surface2); border: none; color: var(--text2); width: 28px; height: 28px; border-radius: 50%; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  .modal-body { overflow-y: auto; padding: 16px; flex: 1; }
+  .history-empty { text-align: center; color: var(--text2); font-size: 14px; padding: 32px 0; }
+  .history-entry { background: var(--surface2); border-radius: var(--radius-sm); padding: 12px; margin-bottom: 8px; }
+  .history-date { font-size: 11px; color: var(--text2); font-weight: 600; margin-bottom: 6px; }
+  .history-sets { display: flex; flex-wrap: wrap; gap: 6px; }
+  .history-set-chip { background: var(--surface3); border-radius: 6px; padding: 5px 10px; font-size: 12px; font-weight: 600; }
+  .history-set-chip span { color: var(--text2); font-weight: 400; margin-left: 4px; }
+
+  /* FINISH BTN */
+  .finish-bar { position: fixed; bottom: 0; left: 0; right: 0; padding: 12px 16px; background: var(--bg); border-top: 1px solid var(--border); transition: bottom 0.2s; }
+  .finish-bar.timer-active { bottom: 90px; }
+  .finish-btn { width: 100%; background: var(--green); color: white; border: none; border-radius: var(--radius); padding: 15px; font-size: 16px; font-weight: 800; cursor: pointer; }
+  .finish-btn:active { opacity: 0.8; }
+
+  /* TOAST */
+  .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: var(--surface2); color: var(--text); padding: 10px 20px; border-radius: 20px; font-size: 14px; font-weight: 600; z-index: 500; border: 1px solid var(--border); opacity: 0; transition: opacity 0.3s; pointer-events: none; white-space: nowrap; }
+  .toast.show { opacity: 1; }
+
+  /* DING */
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
+</style>
+</head>
+<body>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- TIMER BAR - bottom, non-blocking -->
+<div class="timer-bar" id="timerBar">
+  <div class="timer-bar-top">
+    <div class="timer-bar-label" id="timerTitle">Rest</div>
+    <div class="timer-bar-secs" id="timerDisplay">0:00</div>
+    <div class="timer-bar-actions">
+      <button class="timer-skip" onclick="skipTimer()">Skip</button>
+      <button class="timer-done-btn" onclick="closeTimer()">Done</button>
+    </div>
+  </div>
+  <div class="timer-progress-track">
+    <div class="timer-progress-fill" id="timerProgress"></div>
+  </div>
+</div>
+
+<!-- HISTORY MODAL -->
+<div class="modal-overlay" id="historyModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="historyModalTitle">History</div>
+      <button class="modal-close" onclick="closeHistory()">✕</button>
+    </div>
+    <div class="modal-body" id="historyModalBody"></div>
+  </div>
+</div>
+
+<!-- SCREEN: DAY LIST -->
+<div class="screen active" id="screenDays">
+  <div class="nav">
+    <div class="nav-title">🏋️ Dr. Soko Workout</div>
+  </div>
+  <div class="phase-bar">
+    <button class="phase-btn active" id="btnReload" onclick="setPhase('reload')">🔄 Reload Phase</button>
+    <button class="phase-btn" id="btnDeload" onclick="setPhase('deload')">⬇️ Deload Phase</button>
+  </div>
+  <div id="dayList"></div>
+</div>
+
+<!-- SCREEN: WORKOUT -->
+<div class="screen" id="screenWorkout">
+  <div class="nav">
+    <button class="nav-back" onclick="goBack()">←</button>
+    <div class="nav-title" id="workoutNavTitle"></div>
+    <div class="nav-badge" id="workoutPhaseBadge">Reload</div>
+  </div>
+  <div id="workoutContent"></div>
+  <div class="finish-bar">
+    <button class="finish-btn" onclick="finishWorkout()">✅ Finish Workout</button>
+  </div>
+</div>
+
+<script>
+// ===== DATA =====
+const WORKOUT_DAYS = [{"id":"day1","name":"Day 1 – Leg Day","muscleGroups":"Legs, Glutes, Calves, Abs","exercises":[{"id":"d1e1","name":"Squats (High Bar)","sets":[{"set":1,"reps":"8","restSeconds":420,"dropset":false}],"notes":""},{"id":"d1e2","name":"Romanian Deadlifts (Deficit)","sets":[{"set":1,"reps":"16","restSeconds":300,"dropset":false}],"notes":""},{"id":"d1e3","name":"Quad Extensions","sets":[{"set":1,"reps":"16-15 myo-reps","restSeconds":90,"dropset":false}],"notes":"MYO-REPS: perform a set of 15 reps (3 RIR). Rest 5-10 sec. Then 3-5 rep chunks with 5-10 sec rest between until all myo-reps hit.","isMyo":true},{"id":"d1e4","name":"Seated Hamstring Curls","sets":[{"set":1,"reps":"16","restSeconds":150,"dropset":true}],"notes":"Double dropsets: reach near failure heavy, immediately reduce weight x2."},{"id":"d1e5","name":"Glute Abductors (Machine)","sets":[{"set":1,"reps":"16","restSeconds":150,"dropset":false}],"notes":""},{"id":"d1e6","name":"Machine Adductors","sets":[{"set":1,"reps":"16","restSeconds":150,"dropset":true}],"notes":""},{"id":"d1e7","name":"Glute Hyperextensions (Holding Weight)","sets":[{"set":1,"reps":"16","restSeconds":150,"dropset":true}],"notes":"Double dropsets. Optional."},{"id":"d1e8","name":"Reverse Crunches (Decline Bench, Legs Straight)","sets":[{"set":1,"reps":"16","restSeconds":60,"dropset":false}],"notes":""},{"id":"d1e9","name":"Sit-Ups (Decline Bench, Holding Weight)","sets":[{"set":1,"reps":"16","restSeconds":180,"dropset":true}],"notes":""},{"id":"d1e10","name":"Standing Calf Raises","sets":[{"set":1,"reps":"16","restSeconds":120,"dropset":false},{"set":2,"reps":"15","restSeconds":180,"dropset":true}],"notes":"Set 2: Double dropsets."}]},{"id":"day2","name":"Day 2 – Push Day","muscleGroups":"Chest, Delts (Front), Delts (Lateral), Triceps","exercises":[{"id":"d2e1","name":"Incline Bench Press (Smith Machine)","sets":[{"set":1,"reps":"8","restSeconds":360,"dropset":false}],"notes":""},{"id":"d2e2","name":"Bench Press (Dumbbell)","sets":[{"set":1,"reps":"16","restSeconds":360,"dropset":true}],"notes":"Double dropsets."},{"id":"d2e3","name":"Shoulder Press (Dumbbell)","sets":[{"set":1,"reps":"16","restSeconds":240,"dropset":false}],"notes":""},{"id":"d2e4","name":"Overhead Dumbbell Triceps Extensions (Two Arm)","sets":[{"set":1,"reps":"16","restSeconds":180,"dropset":false}],"notes":""},{"id":"d2e5","name":"Rope Cable Triceps Extensions (Overhead Mid Pull)","sets":[{"set":1,"reps":"16","restSeconds":180,"dropset":true}],"notes":""},{"id":"d2e6","name":"Cable Lateral Raises, Front Pull (Single Arm, Torso Diagonal)","sets":[{"set":1,"reps":"16","restSeconds":90,"dropset":false}],"notes":""},{"id":"d2e7","name":"Cable Lateral Raises, Rear Pull (Single Arm)","sets":[{"set":1,"reps":"16","restSeconds":90,"dropset":true}],"notes":""}]},{"id":"day3","name":"Day 3 – Pull Day","muscleGroups":"Back, Biceps, Delts (Rear), Traps, Forearms","exercises":[{"id":"d3e1","name":"Deadlifts","sets":[{"set":1,"reps":"8","restSeconds":420,"dropset":false}],"notes":""},{"id":"d3e2","name":"Barbell Rows (Underhand Grip)","sets":[{"set":1,"reps":"16","restSeconds":180,"dropset":false}],"notes":""},{"id":"d3e3","name":"Upper Back Plate Loaded Rows (Single Arm, Diagonal Overhead Pull)","sets":[{"set":1,"reps":"16","restSeconds":180,"dropset":false}],"notes":""},{"id":"d3e4","name":"Lat Pushdowns (Straight Bar)","sets":[{"set":1,"reps":"15 / 15 myo-reps","restSeconds":120,"dropset":false}],"notes":"3 RIR on activation set, rest, then 15 more reps in 3-5 rep chunks with 5-10 sec rest.","isMyo":true},{"id":"d3e5","name":"Plate Loaded Preacher Curl (Single Arm)","sets":[{"set":1,"reps":"16","restSeconds":120,"dropset":false}],"notes":""},{"id":"d3e6","name":"Barbell Preacher Curl (Reverse Grip)","sets":[{"set":1,"reps":"16","restSeconds":180,"dropset":true}],"notes":""},{"id":"d3e7","name":"Cable Rear Delt Flies, Low Pull (Single Arm, Overhand Grip)","sets":[{"set":1,"reps":"16","restSeconds":120,"dropset":true}],"notes":""},{"id":"d3e8","name":"Smith Machine Shrugs","sets":[{"set":1,"reps":"16","restSeconds":120,"dropset":false},{"set":2,"reps":"15","restSeconds":180,"dropset":true}],"notes":""},{"id":"d3e9","name":"Cable Wrist Curls (Straight Bar, Overhand Grip, Target Extensors)","sets":[{"set":1,"reps":"16","restSeconds":60,"dropset":false},{"set":2,"reps":"15","restSeconds":60,"dropset":true}],"notes":""},{"id":"d3e10","name":"Cable Wrist Curls (Straight Bar, Overhand Grip, Target Flexors)","sets":[{"set":1,"reps":"16","restSeconds":60,"dropset":false},{"set":2,"reps":"15","restSeconds":60,"dropset":true}],"notes":""},{"id":"d3e11","name":"Lower Back Extensions (Holding Weight)","sets":[{"set":1,"reps":"16 / 15 myo-reps","restSeconds":0,"dropset":false}],"notes":"Myo-reps style.","isMyo":true}]},{"id":"rest1","name":"Rest Day","isRest":true,"muscleGroups":"","exercises":[]},{"id":"day4","name":"Day 4 – Leg Day","muscleGroups":"Legs, Glutes, Calves, Abs","exercises":[{"id":"d4e1","name":"Squats (High Bar)","sets":[{"set":1,"reps":"8","restSeconds":420,"dropset":false}],"notes":""},{"id":"d4e2","name":"Straight Leg Deadlifts (Barbell, Deficit)","sets":[{"set":1,"reps":"14","restSeconds":300,"dropset":false}],"notes":""},{"id":"d4e3","name":"Smith Machine Squats (Narrow Stance)","sets":[{"set":1,"reps":"14","restSeconds":300,"dropset":true}],"notes":"Double dropsets."},{"id":"d4e4","name":"Seated Hamstring Curls","sets":[{"set":1,"reps":"14 / 15 myo-reps","restSeconds":120,"dropset":false}],"notes":"","isMyo":true},{"id":"d4e5","name":"Glute Abductors (Machine)","sets":[{"set":1,"reps":"14","restSeconds":150,"dropset":true}],"notes":""},{"id":"d4e6","name":"Machine Adductors","sets":[{"set":1,"reps":"14","restSeconds":180,"dropset":true}],"notes":""},{"id":"d4e7","name":"Hanging Leg Raises (Legs Straight, Holding Weight)","sets":[{"set":1,"reps":"14","restSeconds":180,"dropset":false}],"notes":""},{"id":"d4e8","name":"Seated Calf Raises","sets":[{"set":1,"reps":"14","restSeconds":150,"dropset":false},{"set":2,"reps":"13","restSeconds":150,"dropset":true}],"notes":"Last set: 2 RIR on heavy, then dropset within 1-2 reps of failure."},{"id":"d4e9","name":"Sit-Ups (Decline Bench, Holding Weight)","sets":[{"set":1,"reps":"14","restSeconds":60,"dropset":true}],"notes":"Last set: 2 RIR on heavy, then dropset."}]},{"id":"day5","name":"Day 5 – Push Day","muscleGroups":"Chest, Delts (Front), Delts (Lateral), Triceps","exercises":[{"id":"d5e1","name":"Chest Press (Plate Loaded)","sets":[{"set":1,"reps":"8","restSeconds":330,"dropset":false}],"notes":""},{"id":"d5e2","name":"Incline Bench Press (Dumbbell)","sets":[{"set":1,"reps":"14","restSeconds":330,"dropset":true}],"notes":"Dropset into press flies."},{"id":"d5e3","name":"Dips (Weighted)","sets":[{"set":1,"reps":"14","restSeconds":180,"dropset":false}],"notes":""},{"id":"d5e4","name":"Cable Lateral Raises, Front Pull (Single Arm)","sets":[{"set":1,"reps":"14","restSeconds":120,"dropset":false}],"notes":""},{"id":"d5e5","name":"Rope Cable Triceps Extensions (Overhead Mid Pull)","sets":[{"set":1,"reps":"14","restSeconds":90,"dropset":true}],"notes":""},{"id":"d5e6","name":"Cable Front Raises (Single Arm, Overhand Grip)","sets":[{"set":1,"reps":"14","restSeconds":90,"dropset":false}],"notes":""},{"id":"d5e7","name":"Cable Lateral Raises, Rear Pull (Single Arm, Torso Diagonal)","sets":[{"set":1,"reps":"14","restSeconds":90,"dropset":true}],"notes":""}]},{"id":"day6","name":"Day 6 – Pull Day","muscleGroups":"Back, Biceps, Delts (Rear), Traps, Forearms","exercises":[{"id":"d6e1","name":"Lat Pulldowns (Plate Loaded, Single Arm)","sets":[{"set":1,"reps":"14","restSeconds":180,"dropset":false}],"notes":""},{"id":"d6e2","name":"Chin-Ups","sets":[{"set":1,"reps":"AMRAP","restSeconds":180,"dropset":false}],"notes":""},{"id":"d6e3","name":"Dumbbell Rows (Single Arm, Semi-Tandem Stance)","sets":[{"set":1,"reps":"14","restSeconds":180,"dropset":true}],"notes":""},{"id":"d6e4","name":"Barbell Preacher Curl","sets":[{"set":1,"reps":"14","restSeconds":120,"dropset":false}],"notes":""},{"id":"d6e5","name":"Bayesian Curls (Single Arm)","sets":[{"set":1,"reps":"14","restSeconds":180,"dropset":true}],"notes":""},{"id":"d6e6","name":"Face Pulls (Dumbbell, Incline Bench)","sets":[{"set":1,"reps":"14","restSeconds":120,"dropset":false}],"notes":""},{"id":"d6e7","name":"Face Pulls (Dumbbell)","sets":[{"set":1,"reps":"14","restSeconds":120,"dropset":true}],"notes":""},{"id":"d6e8","name":"Plate Loaded Shrugs","sets":[{"set":1,"reps":"14","restSeconds":180,"dropset":false},{"set":2,"reps":"13","restSeconds":180,"dropset":true}],"notes":""},{"id":"d6e9","name":"Lower Back Extensions (Machine)","sets":[{"set":1,"reps":"14 / 15 myo-reps","restSeconds":90,"dropset":false}],"notes":"","isMyo":true},{"id":"d6e10","name":"Elbows Planted Barbell Wrist Curls (Overhand Grip, Target Extensors)","sets":[{"set":1,"reps":"16","restSeconds":90,"dropset":false},{"set":2,"reps":"15","restSeconds":90,"dropset":true}],"notes":""},{"id":"d6e11","name":"Elbows Planted Barbell Wrist Curls (Underhand Grip, Target Flexors)","sets":[{"set":1,"reps":"16","restSeconds":90,"dropset":false},{"set":2,"reps":"15","restSeconds":90,"dropset":true}],"notes":""}]},{"id":"rest2","name":"Rest Day","isRest":true,"muscleGroups":"","exercises":[]},{"id":"day7","name":"Day 7 – Leg Day","muscleGroups":"Legs, Glutes, Calves, Abs","exercises":[{"id":"d7e1","name":"Squats (High Bar)","sets":[{"set":1,"reps":"6","restSeconds":420,"dropset":false}],"notes":""},{"id":"d7e2","name":"Straight Leg Deadlifts (Barbell, Deficit)","sets":[{"set":1,"reps":"12","restSeconds":240,"dropset":false}],"notes":""},{"id":"d7e3","name":"Leg Press (Single Leg)","sets":[{"set":1,"reps":"6","restSeconds":360,"dropset":true}],"notes":"Dropset into 2-leg."},{"id":"d7e4","name":"Standing Hamstring Curls","sets":[{"set":1,"reps":"12","restSeconds":150,"dropset":true}],"notes":"Dropset, weak side only."},{"id":"d7e5","name":"Glute Abductors (Machine)","sets":[{"set":1,"reps":"15 / 15 myo-reps","restSeconds":150,"dropset":false}],"notes":"","isMyo":true},{"id":"d7e6","name":"Machine Adductors","sets":[{"set":1,"reps":"15 / 15 myo-reps","restSeconds":150,"dropset":false}],"notes":"","isMyo":true},{"id":"d7e7","name":"Glute Hyperextensions (Single Leg, Holding Weight)","sets":[{"set":1,"reps":"12","restSeconds":150,"dropset":false}],"notes":""},{"id":"d7e8","name":"Reverse Crunches (Decline Bench, Straight Legs)","sets":[{"set":1,"reps":"AMRAP","restSeconds":150,"dropset":false}],"notes":""},{"id":"d7e9","name":"Standing Calf Raises","sets":[{"set":1,"reps":"12","restSeconds":180,"dropset":false},{"set":2,"reps":"11","restSeconds":180,"dropset":true}],"notes":""},{"id":"d7e10","name":"Sit-Ups (GHD Machine, Holding Weight)","sets":[{"set":1,"reps":"12","restSeconds":180,"dropset":true}],"notes":""}]},{"id":"day8","name":"Day 8 – Push Day","muscleGroups":"Chest, Delts (Front), Delts (Lateral), Triceps","exercises":[{"id":"d8e1","name":"Incline Bench Press (Smith Machine)","sets":[{"set":1,"reps":"6","restSeconds":360,"dropset":false}],"notes":"Note: 4-3 and 6-5 pairing."},{"id":"d8e2","name":"Bench Press (Smith Machine)","sets":[{"set":1,"reps":"12","restSeconds":360,"dropset":true}],"notes":""},{"id":"d8e3","name":"Shoulder Press (Barbell, Standing)","sets":[{"set":1,"reps":"6","restSeconds":360,"dropset":false}],"notes":""},{"id":"d8e4","name":"Shoulder Press (Machine, Neutral Grip)","sets":[{"set":1,"reps":"12","restSeconds":330,"dropset":false}],"notes":""},{"id":"d8e5","name":"Overhead Dumbbell Triceps Extensions (Two Arm)","sets":[{"set":1,"reps":"12","restSeconds":180,"dropset":false}],"notes":""},{"id":"d8e6","name":"Cable Lateral Raises, Rear Pull (Single Arm, Torso Diagonal)","sets":[{"set":1,"reps":"12","restSeconds":90,"dropset":false}],"notes":""},{"id":"d8e7","name":"Overhead Cable Triceps Extensions (Single Arm, Underhand Grip)","sets":[{"set":1,"reps":"15 / 15 myo-reps","restSeconds":90,"dropset":false}],"notes":"","isMyo":true},{"id":"d8e8","name":"Cable Lateral Raises, Front Pull (Single Arm)","sets":[{"set":1,"reps":"12","restSeconds":90,"dropset":true}],"notes":""}]},{"id":"day9","name":"Day 9 – Pull Day","muscleGroups":"Back, Biceps, Delts (Rear), Traps, Forearms","exercises":[{"id":"d9e1","name":"Deadlifts","sets":[{"set":1,"reps":"6","restSeconds":420,"dropset":false}],"notes":""},{"id":"d9e2","name":"Pull-Ups (Neutral Grip, Weighted)","sets":[{"set":1,"reps":"12","restSeconds":180,"dropset":false}],"notes":""},{"id":"d9e3","name":"Upper Back Plate Loaded Rows (Single Arm, Diagonal Overhead Pull)","sets":[{"set":1,"reps":"12","restSeconds":180,"dropset":false}],"notes":""},{"id":"d9e4","name":"Dumbbell Preacher Curls","sets":[{"set":1,"reps":"12","restSeconds":120,"dropset":false}],"notes":""},{"id":"d9e5","name":"Cable Curls (Straight Bar, Reverse Grip)","sets":[{"set":1,"reps":"12","restSeconds":120,"dropset":true}],"notes":"Remember: double dropsets."},{"id":"d9e6","name":"Cable Rear Delt Flies (Single Arm, Overhand Grip)","sets":[{"set":1,"reps":"15 / 15 myo-reps","restSeconds":120,"dropset":false}],"notes":"","isMyo":true},{"id":"d9e7","name":"Smith Machine Shrugs","sets":[{"set":1,"reps":"12","restSeconds":180,"dropset":false},{"set":2,"reps":"11","restSeconds":180,"dropset":true}],"notes":""},{"id":"d9e8","name":"Barbell Wrist Curls (Overhand Grip, Target Extensors)","sets":[{"set":1,"reps":"16","restSeconds":180,"dropset":false},{"set":2,"reps":"15","restSeconds":180,"dropset":true}],"notes":""},{"id":"d9e9","name":"Barbell Wrist Curls (Underhand Grip, Target Flexors)","sets":[{"set":1,"reps":"16","restSeconds":180,"dropset":false},{"set":2,"reps":"15","restSeconds":180,"dropset":true}],"notes":""},{"id":"d9e10","name":"Lower Back Extensions (Holding Weight)","sets":[{"set":1,"reps":"15 / 20 myo-reps","restSeconds":0,"dropset":false}],"notes":"","isMyo":true}]},{"id":"rest3","name":"Rest Day","isRest":true,"muscleGroups":"","exercises":[]},{"id":"day10","name":"Day 10 – Leg Day","muscleGroups":"Legs, Glutes, Calves, Abs","exercises":[{"id":"d10e1","name":"Squats (High Bar)","sets":[{"set":1,"reps":"4","restSeconds":420,"dropset":false}],"notes":""},{"id":"d10e2","name":"Romanian Deadlifts (Deficit)","sets":[{"set":1,"reps":"10","restSeconds":300,"dropset":false}],"notes":""},{"id":"d10e3","name":"Hack Squats","sets":[{"set":1,"reps":"10","restSeconds":330,"dropset":true}],"notes":"Double dropsets."},{"id":"d10e4","name":"Lying Hamstring Curls","sets":[{"set":1,"reps":"10 / 15 myo-reps","restSeconds":120,"dropset":false}],"notes":"","isMyo":true},{"id":"d10e5","name":"Glute Abductors (Machine)","sets":[{"set":1,"reps":"15 / 25 myo-reps","restSeconds":150,"dropset":false}],"notes":"","isMyo":true},{"id":"d10e6","name":"Machine Adductors","sets":[{"set":1,"reps":"10","restSeconds":150,"dropset":true}],"notes":""},{"id":"d10e7","name":"Glute Hyperextensions (Holding Weight)","sets":[{"set":1,"reps":"10","restSeconds":150,"dropset":true}],"notes":""},{"id":"d10e8","name":"Hanging Leg Raises","sets":[{"set":1,"reps":"AMRAP","restSeconds":150,"dropset":false}],"notes":""},{"id":"d10e9","name":"Standing Calf Raises","sets":[{"set":1,"reps":"10","restSeconds":180,"dropset":false},{"set":2,"reps":"9","restSeconds":180,"dropset":true}],"notes":""},{"id":"d10e10","name":"Sit-Ups (GHD Machine, Holding Weight)","sets":[{"set":1,"reps":"10","restSeconds":180,"dropset":true}],"notes":""}]},{"id":"day11","name":"Day 11 – Push Day","muscleGroups":"Chest, Delts (Front), Delts (Lateral), Triceps","exercises":[{"id":"d11e1","name":"Incline Bench Press (Smith Machine)","sets":[{"set":1,"reps":"4","restSeconds":360,"dropset":false}],"notes":""},{"id":"d11e2","name":"Incline Bench Press (Dumbbell)","sets":[{"set":1,"reps":"10","restSeconds":360,"dropset":true}],"notes":"Dropset into press flies."},{"id":"d11e3","name":"Dips (Weighted)","sets":[{"set":1,"reps":"10","restSeconds":180,"dropset":false}],"notes":""},{"id":"d11e4","name":"Cable Lateral Raises, Front Pull (Single Arm)","sets":[{"set":1,"reps":"15 / 15 myo-reps","restSeconds":180,"dropset":false}],"notes":"","isMyo":true},{"id":"d11e5","name":"Overhead Barbell Triceps Extensions","sets":[{"set":1,"reps":"10","restSeconds":90,"dropset":true}],"notes":"Double dropsets."},{"id":"d11e6","name":"Cable Front Raises (Single Arm, Neutral Grip)","sets":[{"set":1,"reps":"10","restSeconds":90,"dropset":true}],"notes":""}]},{"id":"day12","name":"Day 12 – Pull Day","muscleGroups":"Back, Biceps, Delts (Rear), Traps, Forearms","exercises":[{"id":"d12e1","name":"Chin-Ups (Weighted)","sets":[{"set":1,"reps":"10","restSeconds":180,"dropset":false}],"notes":""},{"id":"d12e2","name":"Dumbbell Rows (Single Arm, Semi-Tandem Stance)","sets":[{"set":1,"reps":"10","restSeconds":180,"dropset":false}],"notes":""},{"id":"d12e3","name":"Lat Pulldowns (Plate Loaded, Single Arm)","sets":[{"set":1,"reps":"10","restSeconds":180,"dropset":false}],"notes":""},{"id":"d12e4","name":"Plate Loaded Preacher Curl (Single Arm)","sets":[{"set":1,"reps":"10","restSeconds":150,"dropset":false}],"notes":""},{"id":"d12e5","name":"Barbell Preacher Curl (Reverse Grip)","sets":[{"set":1,"reps":"10","restSeconds":180,"dropset":true}],"notes":""},{"id":"d12e6","name":"Machine Rear Delt Flies (Overhand Grip)","sets":[{"set":1,"reps":"10","restSeconds":90,"dropset":true}],"notes":""},{"id":"d12e7","name":"Face Pulls (Rope)","sets":[{"set":1,"reps":"15 / 25 myo-reps","restSeconds":150,"dropset":false}],"notes":"","isMyo":true},{"id":"d12e8","name":"Plate Loaded Shrugs","sets":[{"set":1,"reps":"10","restSeconds":180,"dropset":false},{"set":2,"reps":"9","restSeconds":180,"dropset":true}],"notes":""},{"id":"d12e9","name":"Lower Back Extensions (Machine)","sets":[{"set":1,"reps":"15 / 15 myoreps","restSeconds":90,"dropset":false}],"notes":"","isMyo":true},{"id":"d12e10","name":"Elbows Planted Dumbbell Wrist Curls (Overhand Grip, Target Extensors)","sets":[{"set":1,"reps":"16","restSeconds":90,"dropset":false},{"set":2,"reps":"15","restSeconds":90,"dropset":true}],"notes":""},{"id":"d12e11","name":"Elbows Planted Dumbbell Wrist Curls (Underhand Grip, Target Flexors)","sets":[{"set":1,"reps":"16","restSeconds":90,"dropset":false},{"set":2,"reps":"15","restSeconds":90,"dropset":true}],"notes":""}]},{"id":"rest4","name":"Rest Day","isRest":true,"muscleGroups":"","exercises":[]},{"id":"day13","name":"Day 13 – Legs","muscleGroups":"Legs, Glutes, Calves, Abs","exercises":[{"id":"d13e1","name":"Squats (High Bar)","sets":[{"set":1,"reps":"4","restSeconds":420,"dropset":false}],"notes":""},{"id":"d13e2","name":"Romanian Deadlifts (Deficit)","sets":[{"set":1,"reps":"8","restSeconds":300,"dropset":false}],"notes":""},{"id":"d13e3","name":"Quad Extensions (Single Leg)","sets":[{"set":1,"reps":"8","restSeconds":90,"dropset":true}],"notes":""},{"id":"d13e4","name":"Standing Hamstring Curls (Single Leg)","sets":[{"set":1,"reps":"8","restSeconds":150,"dropset":true}],"notes":"Dropset, weak side only."},{"id":"d13e5","name":"Glute Abductors (Machine)","sets":[{"set":1,"reps":"15 / 25 myo-reps","restSeconds":150,"dropset":false}],"notes":"","isMyo":true},{"id":"d13e6","name":"Machine Adductors","sets":[{"set":1,"reps":"8","restSeconds":150,"dropset":true}],"notes":""},{"id":"d13e7","name":"Glute Hyperextensions (Single Leg, Holding Weight)","sets":[{"set":1,"reps":"8","restSeconds":150,"dropset":true}],"notes":"Dropset, weak side only."},{"id":"d13e8","name":"Reverse Crunches (Decline Bench, Legs Straight)","sets":[{"set":1,"reps":"8","restSeconds":150,"dropset":false}],"notes":""},{"id":"d13e9","name":"Standing Calf Raises","sets":[{"set":1,"reps":"8","restSeconds":180,"dropset":false},{"set":2,"reps":"7","restSeconds":180,"dropset":true}],"notes":""},{"id":"d13e10","name":"Sit-Ups (GHD Machine, Holding Weight)","sets":[{"set":1,"reps":"8","restSeconds":180,"dropset":true}],"notes":""}]},{"id":"day14","name":"Day 14 – Push","muscleGroups":"Chest, Delts (Front), Delts (Lateral), Triceps","exercises":[{"id":"d14e1","name":"Incline Bench Press (Smith Machine)","sets":[{"set":1,"reps":"4","restSeconds":360,"dropset":false}],"notes":"4-3 and 6-5 pairing."},{"id":"d14e2","name":"Bench Press (Smith Machine)","sets":[{"set":1,"reps":"8","restSeconds":360,"dropset":true}],"notes":""},{"id":"d14e3","name":"Shoulder Press (Barbell, Standing)","sets":[{"set":1,"reps":"4","restSeconds":360,"dropset":false},{"set":2,"reps":"3","restSeconds":360,"dropset":false}],"notes":""},{"id":"d14e4","name":"Overhead Dumbbell Triceps Extensions (Two Arm)","sets":[{"set":1,"reps":"8","restSeconds":180,"dropset":false}],"notes":""},{"id":"d14e5","name":"Cable Lateral Raises, Front Pull (Single Arm, Torso Diagonal)","sets":[{"set":1,"reps":"8","restSeconds":90,"dropset":false}],"notes":""},{"id":"d14e6","name":"Rope Cable Triceps Extensions (Overhead Mid Pull)","sets":[{"set":1,"reps":"8","restSeconds":90,"dropset":true}],"notes":""},{"id":"d14e7","name":"Cable Lateral Raises, Rear Pull (Single Arm)","sets":[{"set":1,"reps":"8","restSeconds":90,"dropset":true}],"notes":""}]},{"id":"day15","name":"Day 15 – Pull","muscleGroups":"Back, Biceps, Delts (Rear), Traps, Forearms","exercises":[{"id":"d15e1","name":"Deadlifts","sets":[{"set":1,"reps":"3","restSeconds":420,"dropset":false}],"notes":""},{"id":"d15e2","name":"Upper Back Plate Loaded Rows (Single Arm, Diagonal Overhead Pull)","sets":[{"set":1,"reps":"8","restSeconds":180,"dropset":false}],"notes":""},{"id":"d15e3","name":"Lat Pulldowns","sets":[{"set":1,"reps":"15 / 25 myo-reps","restSeconds":180,"dropset":false}],"notes":"","isMyo":true},{"id":"d15e4","name":"Barbell Preacher Curl","sets":[{"set":1,"reps":"8","restSeconds":120,"dropset":false}],"notes":""},{"id":"d15e5","name":"Bayesian Curls (Single Arm)","sets":[{"set":1,"reps":"8","restSeconds":120,"dropset":true}],"notes":""},{"id":"d15e6","name":"Cable Rear Delt Flies, High Pull (Single Arm, Overhand Grip)","sets":[{"set":1,"reps":"15 / 15 myo-reps","restSeconds":120,"dropset":false}],"notes":"","isMyo":true},{"id":"d15e7","name":"Smith Machine Shrugs","sets":[{"set":1,"reps":"8","restSeconds":120,"dropset":false},{"set":2,"reps":"7","restSeconds":180,"dropset":true}],"notes":""},{"id":"d15e8","name":"Cable Wrist Curls (Straight Bar, Overhand Grip, Target Extensors)","sets":[{"set":1,"reps":"15 / 25 myo-reps","restSeconds":60,"dropset":false}],"notes":"","isMyo":true},{"id":"d15e9","name":"Cable Wrist Curls (Straight Bar, Wide Grip, Overhand Grip, Target Flexors)","sets":[{"set":1,"reps":"15 / 25 myo-reps","restSeconds":60,"dropset":false}],"notes":"","isMyo":true},{"id":"d15e10","name":"Lower Back Extensions (Machine)","sets":[{"set":1,"reps":"15 / 25 myo-reps","restSeconds":60,"dropset":false}],"notes":"","isMyo":true}]},{"id":"rest5","name":"Rest Day","isRest":true,"muscleGroups":"","exercises":[]},{"id":"day16","name":"Day 16 – Legs","muscleGroups":"Legs, Glutes, Calves, Abs","exercises":[{"id":"d16e1","name":"Squats (High Bar)","sets":[{"set":1,"reps":"3","restSeconds":420,"dropset":false}],"notes":""},{"id":"d16e2","name":"Straight Leg Deadlifts (Barbell, Deficit)","sets":[{"set":1,"reps":"6","restSeconds":300,"dropset":false}],"notes":""},{"id":"d16e3","name":"Smith Machine Squats (Narrow Stance)","sets":[{"set":1,"reps":"6","restSeconds":330,"dropset":true}],"notes":""},{"id":"d16e4","name":"Seated Hamstring Curls (Single Leg)","sets":[{"set":1,"reps":"6","restSeconds":120,"dropset":true}],"notes":""},{"id":"d16e5","name":"Glute Abductors (Machine)","sets":[{"set":1,"reps":"15 / 25 myo-reps","restSeconds":180,"dropset":false}],"notes":"","isMyo":true},{"id":"d16e6","name":"Machine Adductors","sets":[{"set":1,"reps":"15 / 15 myo-reps","restSeconds":180,"dropset":false}],"notes":"","isMyo":true},{"id":"d16e7","name":"Hanging Leg Raises","sets":[{"set":1,"reps":"15 / 15 myoreps","restSeconds":60,"dropset":false}],"notes":"","isMyo":true},{"id":"d16e8","name":"Seated Calf Raises","sets":[{"set":1,"reps":"6","restSeconds":150,"dropset":false},{"set":2,"reps":"5","restSeconds":150,"dropset":true}],"notes":""}]},{"id":"day17","name":"Day 17 – Push","muscleGroups":"Chest, Delts (Front), Delts (Lateral), Triceps","exercises":[{"id":"d17e1","name":"Chest Press (Plate Loaded)","sets":[{"set":1,"reps":"5","restSeconds":330,"dropset":false}],"notes":""},{"id":"d17e2","name":"Chest Flies (Machine)","sets":[{"set":1,"reps":"15 / 15 myo-reps","restSeconds":240,"dropset":false}],"notes":"","isMyo":true},{"id":"d17e3","name":"Shoulder Press (Dumbbell)","sets":[{"set":1,"reps":"6","restSeconds":300,"dropset":false},{"set":2,"reps":"5","restSeconds":300,"dropset":false}],"notes":""},{"id":"d17e4","name":"Dips (Weighted)","sets":[{"set":1,"reps":"6","restSeconds":180,"dropset":false}],"notes":""},{"id":"d17e5","name":"Cable Lateral Raises, Front Pull (Single Arm, Torso Diagonal)","sets":[{"set":1,"reps":"6","restSeconds":180,"dropset":false}],"notes":""},{"id":"d17e6","name":"Rope Triceps Extensions (Overhead Mid Pull)","sets":[{"set":1,"reps":"15 / 15 myo-reps","restSeconds":90,"dropset":true}],"notes":"","isMyo":true},{"id":"d17e7","name":"Cable Lateral Raises, Rear Pull (Single Arm)","sets":[{"set":1,"reps":"15 / 15 myo-reps","restSeconds":90,"dropset":true}],"notes":"","isMyo":true}]},{"id":"day18","name":"Day 18 – Pull","muscleGroups":"Back, Biceps, Delts (Rear), Traps, Forearms","exercises":[{"id":"d18e1","name":"Lat Pulldowns (Plate Loaded, Single Arm)","sets":[{"set":1,"reps":"6","restSeconds":180,"dropset":false}],"notes":""},{"id":"d18e2","name":"Barbell Rows (Overhand Grip, Mid Back Focused)","sets":[{"set":1,"reps":"6","restSeconds":180,"dropset":false}],"notes":""},{"id":"d18e3","name":"Lat Pulldowns (V-Bar)","sets":[{"set":1,"reps":"15 / 15 myo-reps","restSeconds":180,"dropset":false}],"notes":"","isMyo":true},{"id":"d18e4","name":"Dumbbell Preacher Curls","sets":[{"set":1,"reps":"6","restSeconds":150,"dropset":false}],"notes":""},{"id":"d18e5","name":"Cable Curls (Straight Bar, Reverse Grip)","sets":[{"set":1,"reps":"6","restSeconds":180,"dropset":false}],"notes":""},{"id":"d18e6","name":"Face Pulls (Dumbbell)","sets":[{"set":1,"reps":"6","restSeconds":120,"dropset":false}],"notes":""},{"id":"d18e7","name":"Machine Rear Delt Flies (Overhand Grip)","sets":[{"set":1,"reps":"15 / 15 myo-reps","restSeconds":120,"dropset":false}],"notes":"","isMyo":true},{"id":"d18e8","name":"Plate Loaded Shrugs","sets":[{"set":1,"reps":"6","restSeconds":150,"dropset":false},{"set":2,"reps":"5","restSeconds":180,"dropset":true}],"notes":""},{"id":"d18e9","name":"Lower Back Extensions (Machine)","sets":[{"set":1,"reps":"20 / 20 myo-reps","restSeconds":90,"dropset":false}],"notes":"","isMyo":true},{"id":"d18e10","name":"Elbow on Leg Dumbbell Wrist Curls (Overhand Grip, Target Extensors)","sets":[{"set":1,"reps":"16","restSeconds":90,"dropset":false},{"set":2,"reps":"15","restSeconds":90,"dropset":true}],"notes":""},{"id":"d18e11","name":"Elbow on Leg Dumbbell Wrist Curls (Underhand Grip, Target Flexors)","sets":[{"set":1,"reps":"16","restSeconds":90,"dropset":false},{"set":2,"reps":"15","restSeconds":90,"dropset":true}],"notes":""}]}];
+
+// ===== STATE =====
+let phase = 'reload'; // 'reload' | 'deload'
+let currentDay = null;
+let timerInterval = null;
+let timerRemaining = 0;
+let timerTotal = 0;
+
+// ===== PROGRESSIVE OVERLOAD =====
+// Large muscle groups = 5lb increment, small = 2.5lb
+const LARGE_MUSCLE_EXERCISES = new Set([
+  'd1e1','d4e1','d7e1','d8e1','d10e1','d11e1','d13e1','d14e1','d16e1','d17e1',
+  'd1e2','d3e1','d4e2','d7e2','d9e1','d10e2','d13e2','d15e1','d16e2',
+  'd3e2','d3e3','d6e3','d9e3','d12e2','d15e2','d18e2',
+  'd2e1','d2e2','d5e1','d5e2','d8e2','d11e2','d14e2','d17e1',
+  'd2e3','d8e3','d8e4','d14e3','d17e3',
+  'd6e1','d6e2','d9e2','d12e1','d12e3','d15e3','d18e1','d18e3',
+  'd5e3','d11e3','d14e4','d17e4',
+  'd7e3','d10e3','d4e3','d16e3',
+]);
+
+function getIncrement(exId) {
+  return LARGE_MUSCLE_EXERCISES.has(exId) ? 5 : 2.5;
+}
+
+function getTargetReps(repsStr) {
+  if (!repsStr || repsStr === 'AMRAP') return null;
+  const match = repsStr.match(/^(\d+)/);
+  return match ? parseInt(match[1]) : null;
+}
+
+function getProgressionAdvice(exId, setNum, ph, targetRepsStr) {
+  const targetReps = getTargetReps(targetRepsStr);
+  if (!targetReps) return null;
+  const hist = loadData('hist_' + exId, []);
+  if (!hist.length) return null;
+  const hk = setNum + '_' + ph;
+  let lastEntry = null;
+  for (const entry of hist) {
+    if (entry.sets && entry.sets[hk] && entry.sets[hk].reps && entry.sets[hk].weight) {
+      lastEntry = entry.sets[hk];
+      break;
+    }
+  }
+  if (!lastEntry) return null;
+  const doneReps = parseInt(lastEntry.reps);
+  const lastWeight = parseFloat(lastEntry.weight);
+  if (isNaN(doneReps) || isNaN(lastWeight) || lastWeight <= 0) return null;
+  const diff = doneReps - targetReps;
+  const inc = getIncrement(exId);
+  if (diff >= 3) return { type: 'increase', amount: inc, newWeight: lastWeight + inc };
+  if (diff <= -3) return { type: 'decrease', amount: inc, newWeight: Math.max(0, lastWeight - inc) };
+  return null;
+}
+
+// Storage helpers
+function saveData(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch(e) {} }
+function loadData(key, def) { try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : def; } catch(e) { return def; } }
+
+// ===== AUDIO DING =====
+let audioCtx = null;
+function playDing() {
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(440, audioCtx.currentTime + 0.3);
+    gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.8);
+    osc.start(audioCtx.currentTime);
+    osc.stop(audioCtx.currentTime + 0.8);
+    // Second ding
+    setTimeout(() => {
+      const o2 = audioCtx.createOscillator();
+      const g2 = audioCtx.createGain();
+      o2.connect(g2); g2.connect(audioCtx.destination);
+      o2.frequency.setValueAtTime(1100, audioCtx.currentTime);
+      o2.frequency.exponentialRampToValueAtTime(550, audioCtx.currentTime + 0.3);
+      g2.gain.setValueAtTime(0.4, audioCtx.currentTime);
+      g2.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.6);
+      o2.start(audioCtx.currentTime); o2.stop(audioCtx.currentTime + 0.6);
+    }, 300);
+  } catch(e) {}
+  // Vibrate
+  try { navigator.vibrate && navigator.vibrate([200, 100, 200]); } catch(e) {}
+}
+
+// ===== TOAST =====
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+// ===== PHASE =====
+function setPhase(p) {
+  phase = p;
+  saveData('phase', p);
+  document.getElementById('btnReload').classList.toggle('active', p === 'reload');
+  document.getElementById('btnDeload').classList.toggle('active', p === 'deload');
+  document.getElementById('workoutPhaseBadge').textContent = p === 'reload' ? 'Reload' : 'Deload';
+  renderDayList();
+}
+
+// ===== DAY LIST =====
+function renderDayList() {
+  const container = document.getElementById('dayList');
+  const completed = loadData('completed', {});
+  let html = '';
+  let workoutNum = 0;
+  WORKOUT_DAYS.forEach((day, idx) => {
+    if (day.isRest) {
+      html += `<div class="day-card rest">
+        <div class="day-num rest-num">💤</div>
+        <div class="day-info"><div class="day-name">Rest Day</div><div class="day-muscles">Recovery</div></div>
+      </div>`;
+    } else {
+      workoutNum++;
+      const done = completed[day.id + '_' + phase];
+      html += `<div class="day-card" onclick="openDay('${day.id}')">
+        <div class="day-num">${workoutNum}</div>
+        <div class="day-info">
+          <div class="day-name">${day.name}</div>
+          <div class="day-muscles">${day.muscleGroups}</div>
+        </div>
+        ${done ? '<div class="day-complete-dot"></div>' : ''}
+        <div class="day-arrow">›</div>
+      </div>`;
+    }
+  });
+  container.innerHTML = html;
+}
+
+// ===== OPEN DAY =====
+function openDay(dayId) {
+  currentDay = WORKOUT_DAYS.find(d => d.id === dayId);
+  if (!currentDay) return;
+  document.getElementById('workoutNavTitle').textContent = currentDay.name;
+  document.getElementById('workoutPhaseBadge').textContent = phase === 'reload' ? 'Reload' : 'Deload';
+  renderWorkout();
+  showScreen('screenWorkout');
+}
+
+function renderWorkout() {
+  const day = currentDay;
+  let html = `<div class="workout-header">
+    <div class="workout-title">${day.name}</div>
+    <div class="workout-meta">
+      <div class="meta-chip">💪 ${day.muscleGroups}</div>
+      <div class="meta-chip">${phase === 'reload' ? '🔄 Reload' : '⬇️ Deload'}</div>
+    </div>
+  </div>`;
+
+  day.exercises.forEach((ex, exIdx) => {
+    const isMyo = ex.isMyo;
+    const hasDrop = ex.sets.some(s => s.dropset);
+    const iconClass = isMyo ? 'myo' : (hasDrop ? 'drop' : 'normal');
+    const iconEmoji = isMyo ? '🔁' : (hasDrop ? '⬇️' : '💪');
+
+    html += `<div class="exercise-card" id="excard_${ex.id}">
+      <div class="exercise-header" onclick="toggleExercise('${ex.id}')">
+        <div class="ex-icon ${iconClass}">${iconEmoji}</div>
+        <div style="flex:1">
+          <div class="ex-name">${ex.name}</div>
+          <div class="ex-badges">
+            ${isMyo ? '<span class="badge badge-myo">MYO-REPS</span>' : ''}
+            ${hasDrop ? `<span class="badge badge-drop">${phase==='reload'?'2x':'1x'} DROPSET</span>` : ''}
+          </div>
+        </div>
+        <div class="ex-chevron" id="chev_${ex.id}">▾</div>
+      </div>
+      <div class="exercise-body" id="exbody_${ex.id}">
+        ${ex.notes ? `<div class="notes-box">📋 ${ex.notes}</div>` : ''}
+        <div class="set-label">Sets</div>
+        ${ex.sets.map((set, si) => renderSetRow(ex, set, si)).join('')}
+        <button class="history-btn" onclick="showHistory('${ex.id}', '${escHtml(ex.name)}')">
+          📊 View History
+        </button>
+      </div>
+    </div>`;
+  });
+
+  document.getElementById('workoutContent').innerHTML = html;
+
+  // Auto-open first exercise
+  if (day.exercises.length > 0) {
+    setTimeout(() => toggleExercise(day.exercises[0].id), 100);
+  }
+}
+
+function escHtml(s) { return s.replace(/'/g, "\\'"); }
+
+function renderSetRow(ex, set, setIdx) {
+  const dropCount = phase === 'reload' ? 2 : 1;
+  const dropLabel = set.dropset ? `🔻 ${dropCount}x Dropset after this set` : '';
+  const restLabel = set.restSeconds > 0 ? formatTime(set.restSeconds) : 'No rest';
+  const key = `log_${ex.id}_s${set.set}_${phase}`;
+  let saved = loadData(key, {weight: '', reps: ''});
+
+  // If no weight logged yet, pre-fill from most recent history entry
+  if (!saved.weight && !saved.reps) {
+    const hist = loadData('hist_' + ex.id, []);
+    for (const entry of hist) {
+      const hk = set.set + '_' + phase;
+      if (entry.sets && entry.sets[hk] && (entry.sets[hk].weight || entry.sets[hk].reps)) {
+        saved = { weight: entry.sets[hk].weight || '', reps: entry.sets[hk].reps || '' };
+        break;
+      }
+    }
+  }
+
+  // Get progression advice based on last session
+  const advice = getProgressionAdvice(ex.id, set.set, phase, set.reps);
+  let adviceBanner = '';
+  if (advice) {
+    if (advice.type === 'increase') {
+      adviceBanner = `<div class="progression-banner increase" id="prog_${ex.id}_${setIdx}">
+        ⬆️ INCREASE BY ${advice.amount}lbs → <strong>${advice.newWeight}lbs</strong>
+      </div>`;
+    } else {
+      adviceBanner = `<div class="progression-banner decrease" id="prog_${ex.id}_${setIdx}">
+        ⬇️ DECREASE BY ${advice.amount}lbs → <strong>${advice.newWeight}lbs</strong>
+      </div>`;
+    }
+  } else {
+    adviceBanner = `<div class="progression-banner none" id="prog_${ex.id}_${setIdx}" style="display:none"></div>`;
+  }
+
+  return `<div class="set-row" id="setrow_${ex.id}_${setIdx}">
+    ${adviceBanner}
+    <div class="set-row-top">
+      <div class="set-info">
+        <div class="set-stat">
+          <div class="set-stat-label">Set</div>
+          <div class="set-stat-value">${set.set}</div>
+        </div>
+        <div class="set-stat">
+          <div class="set-stat-label">Target</div>
+          <div class="set-stat-value" style="font-size:12px">${set.reps}</div>
+        </div>
+        ${saved.weight ? `<div class="set-stat">
+          <div class="set-stat-label">Last</div>
+          <div class="set-stat-value" style="font-size:12px;color:var(--blue)">${saved.weight}${saved.reps ? ' × '+saved.reps : ''}</div>
+        </div>` : ''}
+      </div>
+      <div class="rest-chip">⏱ ${restLabel}</div>
+    </div>
+    ${dropLabel ? `<div class="dropset-note">${dropLabel}</div>` : ''}
+    <div class="weight-row">
+      <div class="input-group">
+        <div class="input-label">Weight (kg/lbs)</div>
+        <input class="input-field" type="number" inputmode="decimal" placeholder="0"
+          id="w_${ex.id}_${setIdx}"
+          value="${saved.weight}"
+          data-exid="${ex.id}" data-setnum="${set.set}" data-setidx="${setIdx}"
+          onchange="saveLog(this)">
+      </div>
+      <div class="input-group">
+        <div class="input-label">Reps Done</div>
+        <input class="input-field" type="number" inputmode="numeric" placeholder="${set.reps.split('/')[0].trim()}"
+          id="r_${ex.id}_${setIdx}"
+          value="${saved.reps}"
+          data-exid="${ex.id}" data-setnum="${set.set}" data-setidx="${setIdx}" data-targetreps="${set.reps.replace(/"/g,'')}"
+          onchange="saveLog(this)">
+      </div>
+      ${set.restSeconds > 0 ? `<button class="rest-btn" id="restbtn_${ex.id}_${setIdx}"
+        onclick="startTimer(${set.restSeconds}, '${escHtml(ex.name)} — Set ${set.set}', 'restbtn_${ex.id}_${setIdx}')">
+        Start Rest
+      </button>` : ''}
+    </div>
+  </div>`;
+}
+
+function formatTime(secs) {
+  const m = Math.floor(secs / 60);
+  const s = secs % 60;
+  return `${m}:${s.toString().padStart(2,'0')}`;
+}
+
+function toggleExercise(exId) {
+  const body = document.getElementById('exbody_' + exId);
+  const chev = document.getElementById('chev_' + exId);
+  if (!body) return;
+  const open = body.classList.toggle('open');
+  chev.classList.toggle('open', open);
+}
+
+// ===== LOG SAVE =====
+function saveLog(el) {
+  const exId = el.dataset.exid;
+  const setNum = parseInt(el.dataset.setnum);
+  const setIdx = el.dataset.setidx;
+  const ph = phase;
+  const wEl = document.getElementById('w_' + exId + '_' + setIdx);
+  const rEl = document.getElementById('r_' + exId + '_' + setIdx);
+  const weight = wEl?.value || '';
+  const reps = rEl?.value || '';
+  // Get targetReps from the reps input's data attribute
+  const targetRepsStr = rEl?.dataset?.targetreps || '';
+  const progId = exId + '_' + setIdx;
+  const key = `log_${exId}_s${setNum}_${ph}`;
+  const entry = { weight, reps };
+  saveData(key, entry);
+
+  // Save to history
+  const histKey = `hist_${exId}`;
+  const hist = loadData(histKey, []);
+  const today = new Date().toLocaleDateString('en-AU', {day:'2-digit',month:'short',year:'numeric'});
+  let todayEntry = hist.find(h => h.date === today);
+  if (!todayEntry) { todayEntry = { date: today, sets: {} }; hist.unshift(todayEntry); }
+  todayEntry.sets[setNum + '_' + ph] = entry;
+  if (hist.length > 30) hist.pop();
+  saveData(histKey, hist);
+
+  // Update progression banner live
+  updateProgressionBanner(exId, setNum, ph, progId, targetRepsStr);
+}
+
+function updateProgressionBanner(exId, setNum, ph, progId, targetRepsStr) {
+  const el = document.getElementById('prog_' + progId);
+  if (!el) return;
+  const advice = getProgressionAdvice(exId, setNum, ph, targetRepsStr);
+  if (advice && advice.type === 'increase') {
+    el.className = 'progression-banner increase';
+    el.style.display = '';
+    el.innerHTML = `⬆️ INCREASE BY ${advice.amount}lbs → <strong>${advice.newWeight}lbs</strong>`;
+  } else if (advice && advice.type === 'decrease') {
+    el.className = 'progression-banner decrease';
+    el.style.display = '';
+    el.innerHTML = `⬇️ DECREASE BY ${advice.amount}lbs → <strong>${advice.newWeight}lbs</strong>`;
+  } else {
+    el.style.display = 'none';
+  }
+}
+
+// ===== TIMER =====
+function startTimer(seconds, label, btnId) {
+  if (timerInterval) clearInterval(timerInterval);
+  timerRemaining = seconds;
+  timerTotal = seconds;
+
+  const bar = document.getElementById('timerBar');
+  const display = document.getElementById('timerDisplay');
+  const progress = document.getElementById('timerProgress');
+  const titleEl = document.getElementById('timerTitle');
+  titleEl.textContent = label;
+  display.classList.remove('done');
+  progress.classList.remove('done');
+
+  bar.classList.add('active');
+  // Push finish bar up
+  const finishBar = document.querySelector('.finish-bar');
+  if (finishBar) finishBar.classList.add('timer-active');
+
+  function tick() {
+    if (timerRemaining <= 0) {
+      clearInterval(timerInterval);
+      timerInterval = null;
+      display.textContent = '0:00';
+      display.classList.add('done');
+      progress.style.width = '0%';
+      progress.classList.add('done');
+      playDing();
+      return;
+    }
+    display.textContent = formatTime(timerRemaining);
+    const pct = (timerRemaining / timerTotal) * 100;
+    progress.style.width = pct + '%';
+    timerRemaining--;
+  }
+  tick();
+  timerInterval = setInterval(tick, 1000);
+}
+
+function skipTimer() {
+  if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+  closeTimer();
+}
+
+function closeTimer() {
+  document.getElementById('timerBar').classList.remove('active');
+  const finishBar = document.querySelector('.finish-bar');
+  if (finishBar) finishBar.classList.remove('timer-active');
+  if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+}
+
+// ===== HISTORY =====
+function showHistory(exId, exName) {
+  const hist = loadData('hist_' + exId, []);
+  const modal = document.getElementById('historyModal');
+  document.getElementById('historyModalTitle').textContent = exName;
+  const body = document.getElementById('historyModalBody');
+
+  if (!hist.length) {
+    body.innerHTML = '<div class="history-empty">📭 No history yet.<br>Log a set to start tracking!</div>';
+  } else {
+    let html = '';
+    hist.forEach(entry => {
+      html += `<div class="history-entry">
+        <div class="history-date">📅 ${entry.date}</div>
+        <div class="history-sets">`;
+      Object.entries(entry.sets).forEach(([k, v]) => {
+        if (v.weight || v.reps) {
+          const [setNum, ph] = k.split('_');
+          html += `<div class="history-set-chip">
+            Set ${setNum} <span>${ph}</span>
+            ${v.weight ? `· ${v.weight}kg` : ''}
+            ${v.reps ? `· ${v.reps} reps` : ''}
+          </div>`;
+        }
+      });
+      html += `</div></div>`;
+    });
+    body.innerHTML = html;
+  }
+  modal.classList.add('active');
+}
+
+function closeHistory() {
+  document.getElementById('historyModal').classList.remove('active');
+}
+
+// ===== FINISH =====
+function finishWorkout() {
+  if (!currentDay) return;
+  const completed = loadData('completed', {});
+  completed[currentDay.id + '_' + phase] = new Date().toISOString();
+  saveData('completed', completed);
+  showToast('🎉 Workout complete!');
+  setTimeout(() => goBack(), 800);
+}
+
+// ===== NAV =====
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+function goBack() {
+  showScreen('screenDays');
+  renderDayList();
+}
+
+// ===== INIT =====
+function init() {
+  const savedPhase = loadData('phase', 'reload');
+  phase = savedPhase;
+  document.getElementById('btnReload').classList.toggle('active', phase === 'reload');
+  document.getElementById('btnDeload').classList.toggle('active', phase === 'deload');
+  renderDayList();
+  // Unlock audio on first touch
+  document.addEventListener('touchstart', () => {
+    try { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {}
+  }, {once: true});
+}
+
+init();
+</script>
+</body>
+</html>
