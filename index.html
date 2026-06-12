@@ -50,7 +50,7 @@
   .phase-btn.active { border-color: var(--accent); background: rgba(230,57,70,0.15); color: var(--accent); }
 
   /* SCREENS */
-  .screen { display: none; padding: 0 0 80px 0; }
+  .screen { display: none; padding: 0 0 24px 0; }
   .screen.active { display: block; }
 
   /* DAY LIST */
@@ -153,13 +153,37 @@
   .history-empty { text-align: center; color: var(--text2); font-size: 14px; padding: 32px 0; }
   .history-entry { background: var(--surface2); border-radius: var(--radius-sm); padding: 12px; margin-bottom: 8px; }
   .history-date { font-size: 11px; color: var(--text2); font-weight: 600; margin-bottom: 6px; }
+  .history-variant { font-size: 11px; color: var(--text2); margin-bottom: 8px; line-height: 1.4; }
   .history-sets { display: flex; flex-wrap: wrap; gap: 6px; }
   .history-set-chip { background: var(--surface3); border-radius: 6px; padding: 5px 10px; font-size: 12px; font-weight: 600; }
   .history-set-chip span { color: var(--text2); font-weight: 400; margin-left: 4px; }
 
+  /* WORKOUT ACTIONS */
+  .workout-actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+  .secondary-btn { background: var(--surface2); color: var(--text); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; font-size: 13px; font-weight: 700; cursor: pointer; }
+  .secondary-btn:active { opacity: 0.85; }
+  .badge-custom { background: rgba(255,214,10,0.2); color: var(--gold); }
+  .workout-content { padding: 0 0 12px; }
+
+  /* EXERCISE PICKER */
+  .picker-summary { color: var(--text2); font-size: 13px; line-height: 1.5; margin-bottom: 12px; }
+  .picker-search { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; color: var(--text); font-size: 14px; margin-bottom: 12px; outline: none; }
+  .picker-search:focus { border-color: var(--accent); }
+  .picker-chip-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+  .picker-chip { background: var(--surface2); color: var(--text2); border: 1px solid var(--border); border-radius: 999px; padding: 8px 12px; font-size: 12px; font-weight: 700; cursor: pointer; }
+  .picker-chip.active { background: rgba(230,57,70,0.15); border-color: var(--accent); color: var(--accent); }
+  .picker-list { display: flex; flex-direction: column; gap: 8px; }
+  .picker-item { background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 12px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .picker-item-main { flex: 1; min-width: 0; }
+  .picker-item-name { font-size: 14px; font-weight: 700; line-height: 1.4; margin-bottom: 4px; }
+  .picker-item-meta { font-size: 12px; color: var(--text2); line-height: 1.4; }
+  .picker-add-btn { background: var(--accent); color: white; border: none; border-radius: 9px; padding: 10px 12px; font-size: 12px; font-weight: 800; cursor: pointer; white-space: nowrap; }
+  .picker-add-btn[disabled] { background: var(--surface3); color: var(--text2); cursor: default; }
+  .picker-empty { text-align: center; color: var(--text2); font-size: 14px; padding: 24px 0; }
+
   /* FINISH BTN */
-  .finish-bar { position: fixed; bottom: 0; left: 0; right: 0; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); background: var(--bg); border-top: 1px solid var(--border); transition: bottom 0.2s; }
-  .finish-bar.timer-active { bottom: calc(90px + env(safe-area-inset-bottom)); }
+  .finish-bar { position: sticky; bottom: 0; left: 0; right: 0; z-index: 180; margin-top: 12px; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); background: linear-gradient(180deg, rgba(13,13,13,0.75) 0%, var(--bg) 25%); backdrop-filter: blur(10px); border-top: 1px solid var(--border); transition: bottom 0.2s; }
+  .finish-bar.timer-active { bottom: calc(96px + env(safe-area-inset-bottom)); }
   .finish-btn { width: 100%; background: var(--green); color: white; border: none; border-radius: var(--radius); padding: 15px; font-size: 16px; font-weight: 800; cursor: pointer; }
   .finish-btn:active { opacity: 0.8; }
 
@@ -199,6 +223,22 @@
       <button class="modal-close" onclick="closeHistory()">✕</button>
     </div>
     <div class="modal-body" id="historyModalBody"></div>
+  </div>
+</div>
+
+<!-- EXERCISE PICKER MODAL -->
+<div class="modal-overlay" id="exercisePickerModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Add Exercise</div>
+      <button class="modal-close" onclick="closeExercisePicker()">x</button>
+    </div>
+    <div class="modal-body">
+      <div class="picker-summary" id="exercisePickerSummary"></div>
+      <input class="picker-search" id="exerciseSearch" type="search" placeholder="Search exercises or muscle groups" oninput="renderExercisePickerList()">
+      <div class="picker-chip-row" id="exercisePickerChips"></div>
+      <div class="picker-list" id="exercisePickerList"></div>
+    </div>
   </div>
 </div>
 
@@ -252,7 +292,7 @@
       <div class="nav-badge" id="workoutPhaseBadge">Reload</div>
     </div>
   </div>
-  <div id="workoutContent" style="padding-bottom: 120px;"></div>
+  <div id="workoutContent" class="workout-content"></div>
   <div class="finish-bar">
     <button class="finish-btn" onclick="finishWorkout()">✅ Finish Workout</button>
   </div>
@@ -352,9 +392,11 @@ const FULLBODY_DAYS = [
 // ===== STATE =====
 let phase = 'reload'; // 'reload' | 'deload'
 let currentDay = null;
+let currentDayBaseId = null;
 let timerInterval = null;
 let timerRemaining = 0;
 let timerTotal = 0;
+let exercisePickerFilter = 'recommended';
 
 // ===== PROGRESSIVE OVERLOAD =====
 // Large muscle groups = 5lb increment, small = 2.5lb
@@ -369,8 +411,123 @@ const LARGE_MUSCLE_EXERCISES = new Set([
   'd7e3','d10e3','d4e3','d16e3',
 ]);
 
-function getIncrement(exId) {
-  return LARGE_MUSCLE_EXERCISES.has(exId) ? 5 : 2.5;
+const LARGE_MUSCLE_GROUPS = new Set([
+  'legs', 'quads', 'hamstrings', 'glutes', 'chest', 'back'
+]);
+
+function cloneData(obj) {
+  return JSON.parse(JSON.stringify(obj));
+}
+
+function normalizeText(s) {
+  return String(s || '')
+    .toLowerCase()
+    .replace(/&/g, ' and ')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+    .replace(/\s+/g, ' ');
+}
+
+function parseMuscleGroups(muscleGroups) {
+  return String(muscleGroups || '')
+    .split(',')
+    .map(group => group.trim())
+    .filter(Boolean);
+}
+
+function getBaseExerciseName(name) {
+  const stripped = String(name || '').replace(/\([^)]*\)/g, ' ');
+  return stripped.replace(/\s+/g, ' ').trim() || String(name || '');
+}
+
+function getExerciseHistorySlug(exOrName) {
+  const name = typeof exOrName === 'string'
+    ? exOrName
+    : (exOrName?.name || exOrName?.id || '');
+  return normalizeText(getBaseExerciseName(name)) || normalizeText(name) || 'exercise';
+}
+
+function getExerciseHistoryKey(exOrName) {
+  return 'hist_name_' + getExerciseHistorySlug(exOrName);
+}
+
+function mergeHistoryLists(lists) {
+  const merged = new Map();
+  lists.forEach(list => {
+    (list || []).forEach(entry => {
+      if (!entry || !entry.date) return;
+      if (!merged.has(entry.date)) {
+        merged.set(entry.date, {
+          date: entry.date,
+          timestamp: entry.timestamp || 0,
+          exerciseNames: [],
+          sets: {}
+        });
+      }
+      const bucket = merged.get(entry.date);
+      if (entry.timestamp && entry.timestamp > (bucket.timestamp || 0)) {
+        bucket.timestamp = entry.timestamp;
+      }
+      if (entry.exerciseName && !bucket.exerciseNames.includes(entry.exerciseName)) {
+        bucket.exerciseNames.push(entry.exerciseName);
+      }
+      (entry.exerciseNames || []).forEach(name => {
+        if (!bucket.exerciseNames.includes(name)) bucket.exerciseNames.push(name);
+      });
+      Object.entries(entry.sets || {}).forEach(([key, value]) => {
+        if (!bucket.sets[key] || (!bucket.sets[key].weight && !bucket.sets[key].reps)) {
+          bucket.sets[key] = value;
+        }
+      });
+    });
+  });
+  return Array.from(merged.values());
+}
+
+function loadExerciseHistory(ex) {
+  const historyLists = [loadData(getExerciseHistoryKey(ex), [])];
+  if (ex?.id) historyLists.push(loadData('hist_' + ex.id, []));
+  return mergeHistoryLists(historyLists);
+}
+
+function findDayById(dayId) {
+  const days = currentRoutine === 'fullbody' ? FULLBODY_DAYS : WORKOUT_DAYS;
+  return days.find(day => day.id === dayId) || null;
+}
+
+function getCustomExerciseStoreKey(dayId) {
+  return `customExercises_${currentRoutine}_${dayId}`;
+}
+
+function loadCustomExercises(dayId) {
+  return loadData(getCustomExerciseStoreKey(dayId), []);
+}
+
+function saveCustomExercises(dayId, exercises) {
+  saveData(getCustomExerciseStoreKey(dayId), exercises);
+}
+
+function buildCurrentDay(dayId) {
+  const baseDay = findDayById(dayId);
+  if (!baseDay) return null;
+  return {
+    ...baseDay,
+    exercises: [...baseDay.exercises, ...loadCustomExercises(dayId)]
+  };
+}
+
+function getExerciseById(exId) {
+  return currentDay?.exercises.find(ex => ex.id === exId) || null;
+}
+
+function isLargeMuscleGroup(group) {
+  return LARGE_MUSCLE_GROUPS.has(normalizeText(group));
+}
+
+function getIncrement(ex) {
+  if (typeof ex === 'string') return LARGE_MUSCLE_EXERCISES.has(ex) ? 5 : 2.5;
+  if (ex?.id && LARGE_MUSCLE_EXERCISES.has(ex.id)) return 5;
+  return isLargeMuscleGroup(ex?.muscleGroup) ? 5 : 2.5;
 }
 
 function getTargetReps(repsStr) {
@@ -379,10 +536,10 @@ function getTargetReps(repsStr) {
   return match ? parseInt(match[1]) : null;
 }
 
-function getProgressionAdvice(exId, setNum, ph, targetRepsStr) {
+function getProgressionAdvice(ex, setNum, ph, targetRepsStr) {
   const targetReps = getTargetReps(targetRepsStr);
   if (!targetReps) return null;
-  const hist = loadData('hist_' + exId, []);
+  const hist = loadExerciseHistory(ex);
   if (!hist.length) return null;
   const hk = setNum + '_' + ph;
   let lastEntry = null;
@@ -397,7 +554,7 @@ function getProgressionAdvice(exId, setNum, ph, targetRepsStr) {
   const lastWeight = parseFloat(lastEntry.weight);
   if (isNaN(doneReps) || isNaN(lastWeight) || lastWeight <= 0) return null;
   const diff = doneReps - targetReps;
-  const inc = getIncrement(exId);
+  const inc = getIncrement(ex);
   if (diff >= 3) return { type: 'increase', amount: inc, newWeight: lastWeight + inc };
   if (diff <= -3) return { type: 'decrease', amount: inc, newWeight: Math.max(0, lastWeight - inc) };
   return null;
@@ -406,6 +563,41 @@ function getProgressionAdvice(exId, setNum, ph, targetRepsStr) {
 // Storage helpers
 function saveData(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch(e) {} }
 function loadData(key, def) { try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : def; } catch(e) { return def; } }
+
+function buildExerciseLibrary() {
+  const library = new Map();
+  [WORKOUT_DAYS, FULLBODY_DAYS].forEach(days => {
+    days.forEach(day => {
+      if (day.isRest) return;
+      const groups = parseMuscleGroups(day.muscleGroups);
+      day.exercises.forEach(ex => {
+        const key = getExerciseHistorySlug(ex.name);
+        if (!library.has(key)) {
+          library.set(key, {
+            key,
+            name: ex.name,
+            notes: ex.notes || '',
+            sets: cloneData(ex.sets),
+            isMyo: !!ex.isMyo,
+            hasDrop: ex.sets.some(set => set.dropset),
+            muscleGroups: []
+          });
+        }
+        const item = library.get(key);
+        groups.forEach(group => {
+          if (!item.muscleGroups.includes(group)) item.muscleGroups.push(group);
+        });
+        if (!item.notes && ex.notes) item.notes = ex.notes;
+        if (!item.hasDrop && ex.sets.some(set => set.dropset)) item.hasDrop = true;
+        if (!item.isMyo && ex.isMyo) item.isMyo = true;
+        if (ex.name.length < item.name.length) item.name = ex.name;
+      });
+    });
+  });
+  return Array.from(library.values()).sort((a, b) => a.name.localeCompare(b.name));
+}
+
+const EXERCISE_LIBRARY = buildExerciseLibrary();
 
 // ===== AUDIO DING =====
 let audioCtx = null;
@@ -490,8 +682,8 @@ function renderDayList() {
 
 // ===== OPEN DAY =====
 function openDay(dayId) {
-  const days = currentRoutine === 'fullbody' ? FULLBODY_DAYS : WORKOUT_DAYS;
-  currentDay = days.find(d => d.id === dayId);
+  currentDayBaseId = dayId;
+  currentDay = buildCurrentDay(dayId);
   if (!currentDay) return;
   document.getElementById('workoutNavTitle').textContent = currentDay.name;
   document.getElementById('workoutPhaseBadge').textContent = phase === 'reload' ? 'Reload' : 'Deload';
@@ -508,9 +700,12 @@ function renderWorkout() {
       <div class="meta-chip">💪 ${day.muscleGroups}</div>
       <div class="meta-chip">${phase === 'reload' ? '🔄 Reload' : '⬇️ Deload'}</div>
     </div>
+    <div class="workout-actions">
+      <button class="secondary-btn" onclick="openExercisePicker()">+ Add Exercise</button>
+    </div>
   </div>`;
 
-  day.exercises.forEach((ex, exIdx) => {
+  day.exercises.forEach((ex) => {
     const isMyo = ex.isMyo;
     const hasDrop = ex.sets.some(s => s.dropset);
     const iconClass = isMyo ? 'myo' : (hasDrop ? 'drop' : 'normal');
@@ -524,6 +719,7 @@ function renderWorkout() {
           <div class="ex-badges">
             ${isMyo ? '<span class="badge badge-myo">MYO-REPS</span>' : ''}
             ${hasDrop ? `<span class="badge badge-drop">${phase==='reload'?'2x':'1x'} DROPSET</span>` : ''}
+            ${ex.custom ? '<span class="badge badge-custom">ADDED</span>' : ''}
           </div>
         </div>
         <div class="ex-chevron" id="chev_${ex.id}">▾</div>
@@ -532,7 +728,7 @@ function renderWorkout() {
         ${ex.notes ? `<div class="notes-box">📋 ${ex.notes}</div>` : ''}
         <div class="set-label">Sets</div>
         ${ex.sets.map((set, si) => renderSetRow(ex, set, si)).join('')}
-        <button class="history-btn" onclick="showHistory('${ex.id}', '${escHtml(ex.name)}')">
+        <button class="history-btn" onclick="showHistory('${ex.id}')">
           📊 View History
         </button>
       </div>
@@ -558,7 +754,7 @@ function renderSetRow(ex, set, setIdx) {
 
   // If no weight logged yet, pre-fill from most recent history entry
   if (!saved.weight && !saved.reps) {
-    const hist = loadData('hist_' + ex.id, []);
+    const hist = loadExerciseHistory(ex);
     for (const entry of hist) {
       const hk = set.set + '_' + phase;
       if (entry.sets && entry.sets[hk] && (entry.sets[hk].weight || entry.sets[hk].reps)) {
@@ -569,7 +765,7 @@ function renderSetRow(ex, set, setIdx) {
   }
 
   // Get progression advice based on last session
-  const advice = getProgressionAdvice(ex.id, set.set, phase, set.reps);
+  const advice = getProgressionAdvice(ex, set.set, phase, set.reps);
   let adviceBanner = '';
   if (advice) {
     if (advice.type === 'increase') {
@@ -647,6 +843,7 @@ function toggleExercise(exId) {
 // ===== LOG SAVE =====
 function saveLog(el) {
   const exId = el.dataset.exid;
+  const ex = getExerciseById(exId) || { id: exId, name: exId };
   const setNum = parseInt(el.dataset.setnum);
   const setIdx = el.dataset.setidx;
   const ph = phase;
@@ -662,14 +859,19 @@ function saveLog(el) {
   saveData(key, entry);
 
   // Save to history
-  const histKey = `hist_${exId}`;
-  const hist = loadData(histKey, []);
+  const hist = loadExerciseHistory(ex);
   const today = new Date().toLocaleDateString('en-AU', {day:'2-digit',month:'short',year:'numeric'});
   let todayEntry = hist.find(h => h.date === today);
-  if (!todayEntry) { todayEntry = { date: today, sets: {} }; hist.unshift(todayEntry); }
+  if (!todayEntry) {
+    todayEntry = { date: today, timestamp: Date.now(), exerciseName: ex.name, exerciseNames: [ex.name], sets: {} };
+    hist.unshift(todayEntry);
+  }
+  todayEntry.timestamp = Date.now();
+  todayEntry.exerciseName = ex.name;
+  todayEntry.exerciseNames = Array.from(new Set([...(todayEntry.exerciseNames || []), ex.name]));
   todayEntry.sets[setNum + '_' + ph] = entry;
   if (hist.length > 30) hist.pop();
-  saveData(histKey, hist);
+  saveData(getExerciseHistoryKey(ex), hist);
 
   // Update progression banner live
   updateProgressionBanner(exId, setNum, ph, progId, targetRepsStr);
@@ -678,7 +880,7 @@ function saveLog(el) {
 function updateProgressionBanner(exId, setNum, ph, progId, targetRepsStr) {
   const el = document.getElementById('prog_' + progId);
   if (!el) return;
-  const advice = getProgressionAdvice(exId, setNum, ph, targetRepsStr);
+  const advice = getProgressionAdvice(getExerciseById(exId) || exId, setNum, ph, targetRepsStr);
   if (advice && advice.type === 'increase') {
     el.className = 'progression-banner increase';
     el.style.display = '';
@@ -744,27 +946,29 @@ function closeTimer() {
 }
 
 // ===== HISTORY =====
-function showHistory(exId, exName) {
-  const hist = loadData('hist_' + exId, []);
+function showHistory(exId) {
+  const ex = getExerciseById(exId) || { id: exId, name: exId };
+  const hist = loadExerciseHistory(ex);
   const modal = document.getElementById('historyModal');
-  document.getElementById('historyModalTitle').textContent = exName;
+  document.getElementById('historyModalTitle').textContent = ex.name;
   const body = document.getElementById('historyModalBody');
 
   if (!hist.length) {
-    body.innerHTML = '<div class="history-empty">📭 No history yet.<br>Log a set to start tracking!</div>';
+    body.innerHTML = '<div class="history-empty">No history yet.<br>Log a set to start tracking.</div>';
   } else {
     let html = '';
     hist.forEach(entry => {
       html += `<div class="history-entry">
-        <div class="history-date">📅 ${entry.date}</div>
+        <div class="history-date">Date: ${entry.date}</div>
+        ${entry.exerciseNames && entry.exerciseNames.length > 1 ? `<div class="history-variant">${entry.exerciseNames.join(' &middot; ')}</div>` : ''}
         <div class="history-sets">`;
       Object.entries(entry.sets).forEach(([k, v]) => {
         if (v.weight || v.reps) {
           const [setNum, ph] = k.split('_');
           html += `<div class="history-set-chip">
             Set ${setNum} <span>${ph}</span>
-            ${v.weight ? `· ${v.weight}kg` : ''}
-            ${v.reps ? `· ${v.reps} reps` : ''}
+            ${v.weight ? ` &middot; ${v.weight}kg` : ''}
+            ${v.reps ? ` &middot; ${v.reps} reps` : ''}
           </div>`;
         }
       });
@@ -777,6 +981,136 @@ function showHistory(exId, exName) {
 
 function closeHistory() {
   document.getElementById('historyModal').classList.remove('active');
+}
+
+// ===== EXERCISE PICKER =====
+function openExercisePicker() {
+  if (!currentDay) return;
+  exercisePickerFilter = 'recommended';
+  const search = document.getElementById('exerciseSearch');
+  if (search) search.value = '';
+  const groups = parseMuscleGroups(currentDay.muscleGroups);
+  document.getElementById('exercisePickerSummary').textContent = groups.length
+    ? `Recommended from this day: ${groups.join(', ')}`
+    : 'Choose an exercise to add to this day.';
+  renderExercisePickerChips();
+  renderExercisePickerList();
+  document.getElementById('exercisePickerModal').classList.add('active');
+}
+
+function closeExercisePicker() {
+  document.getElementById('exercisePickerModal').classList.remove('active');
+}
+
+function setExercisePickerFilter(filter) {
+  exercisePickerFilter = filter;
+  renderExercisePickerChips();
+  renderExercisePickerList();
+}
+
+function renderExercisePickerChips() {
+  const groups = parseMuscleGroups(currentDay?.muscleGroups || '');
+  const chips = [
+    { id: 'recommended', label: 'Recommended' },
+    ...groups.map(group => ({ id: group, label: group })),
+    { id: 'all', label: 'All Exercises' }
+  ];
+  document.getElementById('exercisePickerChips').innerHTML = chips.map(chip => `
+    <button class="picker-chip ${exercisePickerFilter === chip.id ? 'active' : ''}" onclick="setExercisePickerFilter('${escHtml(chip.id)}')">
+      ${chip.label}
+    </button>
+  `).join('');
+}
+
+function renderExercisePickerList() {
+  const search = normalizeText(document.getElementById('exerciseSearch')?.value || '');
+  const dayGroups = parseMuscleGroups(currentDay?.muscleGroups || '');
+  const dayGroupSet = new Set(dayGroups);
+  const existingKeys = new Set((currentDay?.exercises || []).map(ex => getExerciseHistorySlug(ex.name)));
+
+  let items = EXERCISE_LIBRARY.filter(item => {
+    const matchesSearch = !search
+      || normalizeText(item.name).includes(search)
+      || item.muscleGroups.some(group => normalizeText(group).includes(search));
+    if (!matchesSearch) return false;
+
+    const matchesRecommended = item.muscleGroups.some(group => dayGroupSet.has(group));
+    if (exercisePickerFilter === 'recommended') return matchesRecommended;
+    if (exercisePickerFilter === 'all') return true;
+    return item.muscleGroups.includes(exercisePickerFilter);
+  });
+
+  if (!items.length && exercisePickerFilter === 'recommended') {
+    items = EXERCISE_LIBRARY.filter(item => {
+      return !search
+        || normalizeText(item.name).includes(search)
+        || item.muscleGroups.some(group => normalizeText(group).includes(search));
+    });
+  }
+
+  items.sort((a, b) => {
+    const aMatches = a.muscleGroups.filter(group => dayGroupSet.has(group)).length;
+    const bMatches = b.muscleGroups.filter(group => dayGroupSet.has(group)).length;
+    if (bMatches !== aMatches) return bMatches - aMatches;
+    return a.name.localeCompare(b.name);
+  });
+
+  const list = document.getElementById('exercisePickerList');
+  if (!items.length) {
+    list.innerHTML = '<div class="picker-empty">No matching exercises found.</div>';
+    return;
+  }
+
+  list.innerHTML = items.map(item => {
+    const alreadyAdded = existingKeys.has(item.key);
+    return `<div class="picker-item">
+      <div class="picker-item-main">
+        <div class="picker-item-name">${item.name}</div>
+        <div class="picker-item-meta">${item.muscleGroups.join(', ') || 'General'}</div>
+      </div>
+      <button class="picker-add-btn" ${alreadyAdded ? 'disabled' : `onclick="addExerciseFromLibrary('${item.key}')"`}>
+        ${alreadyAdded ? 'Added' : 'Add'}
+      </button>
+    </div>`;
+  }).join('');
+}
+
+function addExerciseFromLibrary(libraryKey) {
+  if (!currentDayBaseId) return;
+  const template = EXERCISE_LIBRARY.find(item => item.key === libraryKey);
+  if (!template) return;
+
+  const existingKeys = new Set((currentDay?.exercises || []).map(ex => getExerciseHistorySlug(ex.name)));
+  if (existingKeys.has(template.key)) {
+    showToast('That exercise is already on this day.');
+    return;
+  }
+
+  const dayGroups = parseMuscleGroups(currentDay?.muscleGroups || '');
+  const customExercises = loadCustomExercises(currentDayBaseId);
+  const customExercise = {
+    id: `custom_${currentDayBaseId}_${Date.now()}`,
+    name: template.name,
+    sets: cloneData(template.sets),
+    notes: template.notes || '',
+    isMyo: !!template.isMyo,
+    custom: true,
+    muscleGroup: template.muscleGroups.find(group => dayGroups.includes(group)) || template.muscleGroups[0] || ''
+  };
+
+  customExercises.push(customExercise);
+  saveCustomExercises(currentDayBaseId, customExercises);
+  currentDay = buildCurrentDay(currentDayBaseId);
+  renderWorkout();
+  closeExercisePicker();
+  showToast(`Added ${template.name}`);
+
+  setTimeout(() => {
+    const card = document.getElementById('excard_' + customExercise.id);
+    if (!card) return;
+    toggleExercise(customExercise.id);
+    card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 100);
 }
 
 // ===== FINISH =====
