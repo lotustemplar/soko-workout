@@ -1,41 +1,26 @@
-name: Build APK
+name: Publish Public APK
 
 on:
   push:
-      branches: [ main ]
-        workflow_dispatch:
+    branches:
+      - main
+  workflow_dispatch:
 
-        jobs:
-          build:
-              runs-on: ubuntu-latest
-                  steps:
-                        - uses: actions/checkout@v4
+jobs:
+  verify-public-files:
+    runs-on: ubuntu-latest
 
-                              - name: Set up JDK
-                                      uses: actions/setup-java@v4
-                                              with:
-                                                        java-version: '17'
-                                                                  distribution: 'temurin'
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
 
-                                                                        - name: Set up Android SDK
-                                                                                uses: android-actions/setup-android@v3
+      - name: Verify published app files
+        run: |
+          test -f index.html
+          test -f DrSokoWorkout.apk
 
-                                                                                      - name: Copy HTML into assets
-                                                                                              run: |
-                                                                                                        mkdir -p app/src/main/assets
-                                                                                                                  cp index.html app/src/main/assets/index.html
-                                                                                                                  
-                                                                                                                        - name: Make gradlew executable
-                                                                                                                                run: chmod +x gradlew
-                                                                                                                                
-                                                                                                                                      - name: Build APK
-                                                                                                                                              run: ./gradlew assembleDebug
-                                                                                                                                              
-                                                                                                                                                    - name: Upload APK to release
-                                                                                                                                                            uses: svenstaro/upload-release-action@v2
-                                                                                                                                                                    with:
-                                                                                                                                                                              repo_token: ${{ secrets.GITHUB_TOKEN }}
-                                                                                                                                                                                        file: app/build/outputs/apk/debug/app-debug.apk
-                                                                                                                                                                                                  asset_name: DrSokoWorkout.apk
-                                                                                                                                                                                                            tag: workout
-                                                                                                                                                                                                                      overwrite: true
+      - name: Upload public APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dr-soko-workout-public-apk
+          path: DrSokoWorkout.apk
