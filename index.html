@@ -512,7 +512,7 @@ function buildCurrentDay(dayId) {
   if (!baseDay) return null;
   return {
     ...baseDay,
-    exercises: [...baseDay.exercises, ...loadCustomExercises(dayId)]
+    exercises: [...baseDay.exercises, ...loadCustomExercises(dayId)].filter(Boolean)
   };
 }
 
@@ -694,6 +694,7 @@ function openDay(dayId) {
 
 function renderWorkout() {
   const day = currentDay;
+  const exercises = (day.exercises || []).filter(Boolean);
   let html = `<div class="workout-header">
     <div class="workout-title">${day.name}</div>
     <div class="workout-meta">
@@ -705,7 +706,7 @@ function renderWorkout() {
     </div>
   </div>`;
 
-  day.exercises.forEach((ex) => {
+  exercises.forEach((ex) => {
     const isMyo = ex.isMyo;
     const hasDrop = ex.sets.some(s => s.dropset);
     const iconClass = isMyo ? 'myo' : (hasDrop ? 'drop' : 'normal');
@@ -738,8 +739,8 @@ function renderWorkout() {
   document.getElementById('workoutContent').innerHTML = html;
 
   // Auto-open first exercise
-  if (day.exercises.length > 0) {
-    setTimeout(() => toggleExercise(day.exercises[0].id), 100);
+  if (exercises.length > 0) {
+    setTimeout(() => toggleExercise(exercises[0].id), 100);
   }
 }
 
